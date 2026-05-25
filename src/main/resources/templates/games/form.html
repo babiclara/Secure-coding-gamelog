@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${editMode} ? 'Edit Game — GameLog' : 'New Game — GameLog'">Form — GameLog</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0a14; --surface: #16162a; --surface-2: #1f1f3a;
+            --border: #2f2f55; --neon-cyan: #00f0ff; --neon-magenta: #ff00ea;
+            --neon-purple: #9d4edd; --neon-green: #00ff9c; --neon-yellow: #ffe066;
+            --text: #f0e9ff; --text-muted: #8888aa; --danger: #ff3860;
+        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+        body::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.018) 2px, rgba(0,240,255,0.018) 3px); z-index: 0; }
+        a { color: var(--neon-cyan); text-decoration: none; }
+        .navbar { background: var(--surface); border-bottom: 1px solid var(--neon-cyan); padding: 0 2rem; display: flex; align-items: center; height: 64px; box-shadow: 0 4px 24px rgba(0,240,255,0.1); }
+        .navbar-brand { display: flex; align-items: center; gap: 0.8rem; font-size: 1.4rem; font-weight: 900; color: var(--text); letter-spacing: 2px; text-transform: uppercase; font-family: 'Courier New', monospace; text-shadow: 0 0 12px rgba(0,240,255,0.4); }
+        .navbar-brand .accent { background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-purple) 50%, var(--neon-cyan) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px rgba(255,0,234,0.4); transform: rotate(-3deg); }
+        .brand-icon svg { width: 24px; height: 24px; fill: var(--bg); }
+
+        .btn { display: inline-flex; align-items: center; padding: 0.7rem 1.4rem; border-radius: 2px; border: 1px solid transparent; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', monospace; }
+        .btn-primary { background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-purple) 100%); color: var(--text); }
+        .btn-primary:hover { box-shadow: 0 4px 18px rgba(255,0,234,0.4); }
+        .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+        .btn-outline:hover { background: var(--surface-2); color: var(--neon-cyan); border-color: var(--neon-cyan); }
+
+        .main { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem; position: relative; z-index: 1; }
+        .breadcrumb { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; font-family: 'Courier New', monospace; letter-spacing: 1px; text-transform: uppercase; }
+        .form-card { background: var(--surface); border: 1px solid var(--neon-cyan); border-radius: 4px; padding: 2.5rem; box-shadow: 0 0 40px rgba(0,240,255,0.1); }
+        .form-title { font-size: 1.7rem; font-weight: 900; margin-bottom: 1.75rem; letter-spacing: 3px; text-transform: uppercase; color: var(--text); font-family: 'Courier New', monospace; text-shadow: 0 0 20px rgba(0,240,255,0.3); }
+        .form-title .accent { background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .fg { display: flex; flex-direction: column; gap: 0.4rem; }
+        .fg.full { grid-column: 1 / -1; }
+        .fg label { font-size: 0.68rem; font-weight: 700; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', monospace; }
+        .required::after { content: ' *'; color: var(--neon-magenta); }
+        .form-control, .form-select { background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); padding: 0.65rem 0.9rem; border-radius: 2px; font-size: 0.9rem; appearance: none; width: 100%; transition: all 0.2s; font-family: 'Courier New', monospace; }
+        .form-control:focus, .form-select:focus { outline: none; border-color: var(--neon-cyan); background: var(--bg); box-shadow: 0 0 0 2px rgba(0,240,255,0.15); }
+        .form-control::placeholder { color: #5a5a80; }
+        textarea.form-control { resize: vertical; min-height: 100px; line-height: 1.6; }
+        .field-error { color: var(--danger); font-size: 0.76rem; font-family: 'Courier New', monospace; }
+        .section-label { grid-column: 1 / -1; font-size: 0.7rem; font-weight: 900; color: var(--neon-magenta); text-transform: uppercase; letter-spacing: 2.5px; padding-top: 1rem; margin-top: 0.5rem; border-top: 1px solid var(--neon-magenta); font-family: 'Courier New', monospace; display: flex; align-items: center; gap: 0.5rem; text-shadow: 0 0 8px rgba(255,0,234,0.3); }
+        .section-label::before { content: '▸'; color: var(--neon-cyan); }
+
+        .checkbox-group { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+        .checkbox-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+        .checkbox-wrap:hover { border-color: var(--neon-cyan); }
+        .checkbox-wrap input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--neon-magenta); cursor: pointer; }
+        .checkbox-label { display: flex; flex-direction: column; cursor: pointer; flex: 1; }
+        .checkbox-title { font-size: 0.74rem; font-weight: 800; color: var(--text); letter-spacing: 1.2px; text-transform: uppercase; font-family: 'Courier New', monospace; }
+
+        .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--neon-cyan); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/games}">
+        <span class="brand-icon"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2z"/></svg></span>
+        <span><span class="accent">Game</span>Log</span>
+    </a>
+</nav>
+
+<div class="main">
+    <div class="breadcrumb">
+        <a th:href="@{/games}">My Library</a> &nbsp;//&nbsp;
+        <span th:text="${editMode} ? 'Edit game' : 'New game'"></span>
+    </div>
+
+    <div class="form-card">
+        <h2 class="form-title">
+            <span class="accent" th:text="${editMode} ? '// Edit' : '// New'"></span>
+            <span th:text="' Game'"></span>
+        </h2>
+
+        <form th:action="${editMode} ? @{/games/edit/{id}(id=${game.id})} : @{/games/new}"
+              method="post" th:object="${game}">
+
+            <div class="form-grid">
+
+                <div class="section-label">Game Identity</div>
+
+                <div class="fg full">
+                    <label class="required">Game Title</label>
+                    <input class="form-control" type="text" th:field="*{title}" placeholder="e.g. Elden Ring">
+                    <span class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
+                </div>
+
+                <div class="fg">
+                    <label>Developer</label>
+                    <input class="form-control" type="text" th:field="*{developer}" placeholder="e.g. FromSoftware">
+                </div>
+
+                <div class="fg">
+                    <label>Publisher</label>
+                    <input class="form-control" type="text" th:field="*{publisher}" placeholder="e.g. Bandai Namco">
+                </div>
+
+                <div class="fg">
+                    <label>Release Year</label>
+                    <input class="form-control" type="number" th:field="*{releaseYear}" min="1980" max="2030" placeholder="2022">
+                    <span class="field-error" th:if="${#fields.hasErrors('releaseYear')}" th:errors="*{releaseYear}"></span>
+                </div>
+
+                <div class="fg">
+                    <label class="required">Primary Genre</label>
+                    <select class="form-select" th:field="*{genre}">
+                        <option value="">Select...</option>
+                        <option th:each="g : ${genres}" th:value="${g}"
+                                th:text="${#strings.replace(g.name(),'_',' ')}"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('genre')}" th:errors="*{genre}"></span>
+                </div>
+
+                <div class="fg">
+                    <label>Secondary Genre</label>
+                    <select class="form-select" th:field="*{secondaryGenre}">
+                        <option value="">Select...</option>
+                        <option th:each="g : ${genres}" th:value="${g}"
+                                th:text="${#strings.replace(g.name(),'_',' ')}"></option>
+                    </select>
+                </div>
+
+                <div class="fg">
+                    <label class="required">Platform</label>
+                    <select class="form-select" th:field="*{platform}">
+                        <option value="">Select...</option>
+                        <option th:each="p : ${platforms}" th:value="${p}"
+                                th:text="${#strings.replace(p.name(),'_',' ')}"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('platform')}" th:errors="*{platform}"></span>
+                </div>
+
+                <div class="fg">
+                    <label class="required">Status</label>
+                    <select class="form-select" th:field="*{status}">
+                        <option value="">Select...</option>
+                        <option th:each="s : ${statuses}" th:value="${s}"
+                                th:text="${#strings.replace(s.name(),'_',' ')}"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></span>
+                </div>
+
+                <div class="fg">
+                    <label>Difficulty</label>
+                    <select class="form-select" th:field="*{difficulty}">
+                        <option value="">Select...</option>
+                        <option th:each="d : ${difficulties}" th:value="${d}"
+                                th:text="${d.name()}"></option>
+                    </select>
+                </div>
+
+                <div class="fg">
+                    <label>Play Style</label>
+                    <select class="form-select" th:field="*{playStyle}">
+                        <option value="">Select...</option>
+                        <option th:each="p : ${playStyles}" th:value="${p}"
+                                th:text="${#strings.replace(p.name(),'_',' ')}"></option>
+                    </select>
+                </div>
+
+                <div class="fg">
+                    <label>Main Protagonist</label>
+                    <input class="form-control" type="text" th:field="*{mainProtagonist}" placeholder="e.g. Tarnished, Aloy, V">
+                </div>
+
+                <div class="fg">
+                    <label>Current Build / Character</label>
+                    <input class="form-control" type="text" th:field="*{currentBuild}" placeholder="e.g. Faith/Strength dragon-slayer">
+                </div>
+
+                <div class="section-label">Progress Stats</div>
+
+                <div class="fg">
+                    <label>Hours Played</label>
+                    <input class="form-control" type="number" th:field="*{hoursPlayed}" min="0" max="10000" placeholder="e.g. 120">
+                </div>
+
+                <div class="fg">
+                    <label>Story Completion %</label>
+                    <input class="form-control" type="number" th:field="*{completionPercent}" min="0" max="100" placeholder="0-100">
+                </div>
+
+                <div class="fg">
+                    <label>Achievements Unlocked</label>
+                    <input class="form-control" type="number" th:field="*{achievementsUnlocked}" min="0" max="500" placeholder="e.g. 42">
+                </div>
+
+                <div class="fg">
+                    <label>Total Achievements</label>
+                    <input class="form-control" type="number" th:field="*{achievementsTotal}" min="0" max="500" placeholder="e.g. 50">
+                </div>
+
+                <div class="fg">
+                    <label>Price Paid (EUR)</label>
+                    <input class="form-control" type="number" step="0.01" th:field="*{pricePaidEur}" min="0" placeholder="59.99">
+                </div>
+
+                <div class="fg">
+                    <label>Overall Rating (1-5)</label>
+                    <input class="form-control" type="number" th:field="*{rating}" min="1" max="5" placeholder="1-5">
+                    <span class="field-error" th:if="${#fields.hasErrors('rating')}" th:errors="*{rating}"></span>
+                </div>
+
+                <div class="section-label">Quality Scores (1-10)</div>
+
+                <div class="fg">
+                    <label>📖 Story</label>
+                    <input class="form-control" type="number" th:field="*{storyScore}" min="1" max="10" placeholder="1-10">
+                </div>
+
+                <div class="fg">
+                    <label>🎮 Gameplay</label>
+                    <input class="form-control" type="number" th:field="*{gameplayScore}" min="1" max="10" placeholder="1-10">
+                </div>
+
+                <div class="fg">
+                    <label>✨ Visuals</label>
+                    <input class="form-control" type="number" th:field="*{visualsScore}" min="1" max="10" placeholder="1-10">
+                </div>
+
+                <div class="fg">
+                    <label>🎵 Soundtrack</label>
+                    <input class="form-control" type="number" th:field="*{soundtrackScore}" min="1" max="10" placeholder="1-10">
+                </div>
+
+                <div class="fg">
+                    <label>⟳ Replay Value</label>
+                    <input class="form-control" type="number" th:field="*{replayValue}" min="1" max="10" placeholder="1-10">
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-wrap" for="platinumTrophy">
+                        <input id="platinumTrophy" type="checkbox" th:field="*{platinumTrophy}">
+                        <span class="checkbox-label"><span class="checkbox-title">⬢ Platinum</span></span>
+                    </label>
+                    <label class="checkbox-wrap" for="gotyContender">
+                        <input id="gotyContender" type="checkbox" th:field="*{gotyContender}">
+                        <span class="checkbox-label"><span class="checkbox-title">★ GOTY</span></span>
+                    </label>
+                    <label class="checkbox-wrap" for="comfortGame">
+                        <input id="comfortGame" type="checkbox" th:field="*{comfortGame}">
+                        <span class="checkbox-label"><span class="checkbox-title">♥ Comfort Game</span></span>
+                    </label>
+                    <label class="checkbox-wrap" for="recommendToFriend">
+                        <input id="recommendToFriend" type="checkbox" th:field="*{recommendToFriend}">
+                        <span class="checkbox-label"><span class="checkbox-title">✓ Recommend</span></span>
+                    </label>
+                </div>
+
+                <div class="section-label">Timeline</div>
+
+                <div class="fg">
+                    <label>Purchase Date</label>
+                    <input class="form-control" type="date" th:field="*{purchaseDate}">
+                </div>
+
+                <div class="fg">
+                    <label>Started Date</label>
+                    <input class="form-control" type="date" th:field="*{startedDate}">
+                </div>
+
+                <div class="fg">
+                    <label>Finished Date</label>
+                    <input class="form-control" type="date" th:field="*{finishedDate}">
+                </div>
+
+                <div class="section-label">Gaming Journal</div>
+
+                <div class="fg full">
+                    <label>Mood / Vibe Tags</label>
+                    <input class="form-control" type="text" th:field="*{moodTags}" placeholder="e.g. Sublime, melancholy, weekly therapy session">
+                </div>
+
+                <div class="fg full">
+                    <label>★ Favorite Moment</label>
+                    <textarea class="form-control" th:field="*{favoriteMoment}" placeholder="Best scene, fight, or memory..." style="min-height: 80px;"></textarea>
+                </div>
+
+                <div class="fg full">
+                    <label>Review</label>
+                    <textarea class="form-control" th:field="*{review}" placeholder="Hot takes, GOTY contenders, why it slaps..."></textarea>
+                </div>
+
+                <div class="fg full">
+                    <label>Personal Notes</label>
+                    <textarea class="form-control" th:field="*{personalNotes}" placeholder="Private thoughts, DLC plans, things to remember..."></textarea>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <a th:href="@{/games}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary"
+                        th:text="${editMode} ? 'Save Changes' : 'Add to Library'"></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

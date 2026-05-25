@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${game.title} + ' — GameLog'">Game — GameLog</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0a14; --surface: #16162a; --surface-2: #1f1f3a;
+            --border: #2f2f55; --neon-cyan: #00f0ff; --neon-magenta: #ff00ea;
+            --neon-purple: #9d4edd; --neon-green: #00ff9c; --neon-yellow: #ffe066;
+            --neon-orange: #ff8c42; --platinum: #c9c9d4;
+            --text: #f0e9ff; --text-muted: #8888aa;
+            --success: #00ff9c; --danger: #ff3860; --info: #00f0ff;
+        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+        body::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.018) 2px, rgba(0,240,255,0.018) 3px); z-index: 0; }
+        a { color: var(--neon-cyan); text-decoration: none; }
+        .navbar { background: var(--surface); border-bottom: 1px solid var(--neon-cyan); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; box-shadow: 0 4px 24px rgba(0,240,255,0.1); }
+        .navbar-brand { display: flex; align-items: center; gap: 0.8rem; font-size: 1.4rem; font-weight: 900; color: var(--text); letter-spacing: 2px; text-transform: uppercase; font-family: 'Courier New', monospace; text-shadow: 0 0 12px rgba(0,240,255,0.4); }
+        .navbar-brand .accent { background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-purple) 50%, var(--neon-cyan) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px rgba(255,0,234,0.4); transform: rotate(-3deg); }
+        .brand-icon svg { width: 24px; height: 24px; fill: var(--bg); }
+        .navbar-nav { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+        .navbar-nav a { color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', monospace; }
+        .user-badge { background: var(--surface-2); border: 1px solid var(--neon-cyan); border-radius: 2px; padding: 0.3rem 0.85rem; font-size: 0.72rem; color: var(--neon-cyan); font-weight: 700; letter-spacing: 1.5px; font-family: 'Courier New', monospace; text-transform: uppercase; }
+
+        .btn { display: inline-flex; align-items: center; padding: 0.55rem 1.1rem; border-radius: 2px; border: 1px solid transparent; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', monospace; }
+        .btn-primary { background: linear-gradient(135deg, var(--neon-magenta) 0%, var(--neon-purple) 100%); color: var(--text); }
+        .btn-primary:hover { box-shadow: 0 4px 18px rgba(255,0,234,0.4); }
+        .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+        .btn-outline:hover { background: var(--surface-2); color: var(--neon-cyan); border-color: var(--neon-cyan); }
+        .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: var(--text); }
+        .btn-sm { padding: 0.32rem 0.8rem; font-size: 0.7rem; }
+
+        .main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; position: relative; z-index: 1; }
+        .breadcrumb { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; font-family: 'Courier New', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+        .detail-card { background: var(--surface); border: 1px solid var(--neon-cyan); border-radius: 4px; overflow: hidden; box-shadow: 0 0 60px rgba(255,0,234,0.1), 0 0 80px rgba(0,240,255,0.1); position: relative; }
+
+        .status-stripe-large { height: 6px; }
+        .status-stripe-large.playing         { background: linear-gradient(90deg, var(--neon-magenta) 0%, var(--neon-cyan) 100%); }
+        .status-stripe-large.beaten          { background: var(--neon-green); }
+        .status-stripe-large.completed_100   { background: linear-gradient(90deg, var(--neon-yellow) 0%, var(--platinum) 100%); }
+        .status-stripe-large.abandoned       { background: var(--danger); opacity: 0.4; }
+        .status-stripe-large.on_hold         { background: var(--neon-orange); }
+        .status-stripe-large.backlog         { background: var(--text-muted); }
+        .status-stripe-large.wishlist        { background: var(--neon-purple); }
+        .status-stripe-large.replaying       { background: linear-gradient(90deg, var(--neon-purple) 0%, var(--neon-cyan) 100%); }
+
+        .platinum-badge-large { position: absolute; top: 18px; right: 18px; background: linear-gradient(135deg, var(--platinum) 0%, #9b9bb0 100%); color: var(--bg); padding: 0.4rem 0.9rem; border-radius: 2px; font-size: 0.72rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(201,201,212,0.4); z-index: 2; font-family: 'Courier New', monospace; }
+        .goty-ribbon-large { position: absolute; top: 22px; left: -40px; background: linear-gradient(135deg, var(--neon-yellow) 0%, var(--neon-orange) 100%); color: var(--bg); padding: 0.4rem 3.5rem; font-size: 0.72rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; transform: rotate(-45deg); box-shadow: 0 4px 12px rgba(255,224,102,0.4); z-index: 2; font-family: 'Courier New', monospace; }
+
+        .hero { padding: 2.5rem 2rem 1.75rem; background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%); border-bottom: 1px solid var(--border); position: relative; }
+        .dev-line-hero { font-size: 0.78rem; font-weight: 700; color: var(--neon-cyan); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 0.5rem; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0,240,255,0.3); }
+        .game-title { font-size: 2.4rem; font-weight: 900; letter-spacing: 2px; line-height: 1.1; margin-bottom: 0.5rem; text-transform: uppercase; font-family: 'Courier New', monospace; text-shadow: 0 0 24px rgba(255,0,234,0.3); }
+        .protagonist-line { font-size: 0.95rem; color: var(--text-muted); font-family: 'Courier New', monospace; margin-bottom: 1rem; letter-spacing: 0.5px; }
+        .protagonist-line strong { color: var(--neon-cyan); font-weight: 700; }
+
+        .stars-large { display: inline-flex; gap: 0.2rem; font-size: 1.5rem; margin-bottom: 1rem; }
+        .star-filled { color: var(--neon-yellow); text-shadow: 0 0 10px rgba(255,224,102,0.5); }
+        .star-empty { color: var(--border); }
+
+        .badges-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .badge { display: inline-block; padding: 0.3rem 0.85rem; border-radius: 2px; font-size: 0.68rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-family: 'Courier New', monospace; }
+        .badge-genre { background: rgba(157,78,221,0.15); color: var(--neon-purple); border: 1px solid rgba(157,78,221,0.35); }
+        .badge-platform { background: rgba(0,240,255,0.1); color: var(--neon-cyan); border: 1px solid rgba(0,240,255,0.3); }
+        .badge-status-playing         { background: rgba(255,0,234,0.12); color: var(--neon-magenta); border: 1px solid rgba(255,0,234,0.3); }
+        .badge-status-beaten          { background: rgba(0,255,156,0.12); color: var(--neon-green); border: 1px solid rgba(0,255,156,0.3); }
+        .badge-status-completed_100   { background: rgba(255,224,102,0.12); color: var(--neon-yellow); border: 1px solid rgba(255,224,102,0.3); }
+        .badge-status-abandoned       { background: rgba(255,56,96,0.08); color: var(--danger); border: 1px solid rgba(255,56,96,0.25); }
+        .badge-status-on_hold         { background: rgba(255,140,66,0.12); color: var(--neon-orange); border: 1px solid rgba(255,140,66,0.3); }
+        .badge-status-backlog         { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+        .badge-status-wishlist        { background: rgba(157,78,221,0.12); color: var(--neon-purple); border: 1px solid rgba(157,78,221,0.3); }
+        .badge-status-replaying       { background: rgba(157,78,221,0.12); color: var(--neon-purple); border: 1px solid rgba(157,78,221,0.3); }
+        .badge-difficulty { background: rgba(255,140,66,0.1); color: var(--neon-orange); border: 1px solid rgba(255,140,66,0.3); }
+        .badge-playstyle { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+        .body-section { padding: 2rem; }
+        .section-title { font-size: 0.7rem; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 0.85rem; font-weight: 800; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0,240,255,0.3); display: flex; align-items: center; gap: 0.5rem; }
+        .section-title::before { content: '▸'; color: var(--neon-magenta); }
+
+        .stats-hero { background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%); border: 1px solid var(--neon-cyan); border-radius: 2px; padding: 1.5rem; margin-bottom: 1.75rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; box-shadow: 0 0 30px rgba(0,240,255,0.08); position: relative; }
+        .stats-hero::before { content: ''; position: absolute; inset: 4px; border: 1px dashed rgba(0,240,255,0.15); border-radius: 2px; pointer-events: none; }
+        .stat-hero { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 0.5rem; position: relative; z-index: 1; }
+        .stat-hero-icon { font-size: 1.6rem; }
+        .stat-hero-value { font-size: 1.6rem; font-weight: 900; color: var(--neon-cyan); font-family: 'Courier New', monospace; text-shadow: 0 0 12px rgba(0,240,255,0.5); letter-spacing: -0.5px; line-height: 1; }
+        .stat-hero-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', monospace; }
+
+        .completion-block-large { background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--neon-green); border-radius: 2px; padding: 1.25rem 1.4rem; margin-bottom: 1.5rem; }
+        .completion-header-large { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.7rem; }
+        .completion-label-large { color: var(--neon-green); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.78rem; font-family: 'Courier New', monospace; }
+        .completion-value-large { color: var(--neon-green); font-weight: 900; font-size: 2rem; font-family: 'Courier New', monospace; text-shadow: 0 0 12px rgba(0,255,156,0.5); line-height: 1; }
+        .completion-bar-large { height: 12px; background: var(--bg); border-radius: 2px; overflow: hidden; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+        .completion-fill-large { height: 100%; background: linear-gradient(90deg, var(--neon-magenta) 0%, var(--neon-cyan) 50%, var(--neon-green) 100%); border-radius: 2px; box-shadow: 0 0 14px rgba(0,255,156,0.4); }
+
+        .achievement-block-large { background: var(--surface-2); border: 1px solid rgba(255,224,102,0.3); border-left: 4px solid var(--neon-yellow); border-radius: 2px; padding: 1.25rem 1.4rem; margin-bottom: 1.5rem; }
+        .ach-header-large { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.7rem; }
+        .ach-label-large { color: var(--neon-yellow); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.78rem; font-family: 'Courier New', monospace; }
+        .ach-value-large { color: var(--neon-yellow); font-weight: 900; font-size: 1.6rem; font-family: 'Courier New', monospace; text-shadow: 0 0 12px rgba(255,224,102,0.5); line-height: 1; }
+        .ach-value-large small { font-size: 0.8rem; color: var(--text-muted); margin-left: 0.4rem; }
+        .ach-bar-large { height: 12px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+        .ach-fill-large { height: 100%; background: linear-gradient(90deg, var(--neon-yellow) 0%, var(--neon-orange) 100%); border-radius: 2px; box-shadow: 0 0 14px rgba(255,224,102,0.5); }
+
+        .quality-section { margin-bottom: 1.75rem; }
+        .quality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+        .quality-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px; padding: 0.95rem 1.1rem; }
+        .quality-card-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .quality-card-label { font-size: 0.78rem; color: var(--text); font-weight: 700; letter-spacing: 0.5px; font-family: 'Courier New', monospace; text-transform: uppercase; }
+        .quality-card-score { font-size: 1.15rem; color: var(--neon-cyan); font-weight: 900; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0,240,255,0.4); }
+        .quality-card-bar { height: 6px; background: var(--bg); border-radius: 1px; overflow: hidden; }
+        .quality-card-fill { height: 100%; background: linear-gradient(90deg, var(--neon-magenta) 0%, var(--neon-cyan) 100%); border-radius: 1px; box-shadow: 0 0 6px rgba(0,240,255,0.3); }
+
+        .moment-section { background: linear-gradient(135deg, rgba(255,0,234,0.08) 0%, transparent 100%); border-left: 4px solid var(--neon-magenta); padding: 1.25rem 1.4rem; border-radius: 0 2px 2px 0; margin-bottom: 1.5rem; }
+        .moment-text { color: var(--text); line-height: 1.7; font-size: 1rem; font-style: italic; }
+
+        .build-section { background: rgba(157,78,221,0.06); border-left: 4px solid var(--neon-purple); padding: 1.1rem 1.25rem; border-radius: 0 2px 2px 0; margin-bottom: 1.5rem; }
+        .build-text { color: var(--text); line-height: 1.6; font-size: 0.95rem; font-family: 'Courier New', monospace; }
+
+        .mood-section { background: rgba(0,240,255,0.04); border-left: 4px solid var(--neon-cyan); padding: 1.1rem 1.25rem; border-radius: 0 2px 2px 0; margin-bottom: 1.5rem; }
+        .mood-text { color: var(--text); line-height: 1.6; font-size: 0.95rem; font-style: italic; }
+
+        .review-section { margin-bottom: 1.5rem; padding: 1.15rem 1.35rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px; }
+        .review-text { color: var(--text); line-height: 1.75; font-size: 0.95rem; padding: 0.4rem 0; }
+
+        .feature-flags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .feature-flag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.95rem; border-radius: 2px; font-size: 0.7rem; font-weight: 800; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); letter-spacing: 1.2px; text-transform: uppercase; font-family: 'Courier New', monospace; }
+        .feature-flag.active { background: rgba(0,240,255,0.08); border-color: rgba(0,240,255,0.3); color: var(--neon-cyan); text-shadow: 0 0 6px rgba(0,240,255,0.3); }
+        .feature-flag.platinum-active { background: rgba(201,201,212,0.08); border-color: rgba(201,201,212,0.35); color: var(--platinum); }
+        .feature-flag.goty-active { background: rgba(255,224,102,0.08); border-color: rgba(255,224,102,0.35); color: var(--neon-yellow); }
+
+        .info-rows { padding: 0.5rem 0 1rem; border-top: 1px solid var(--border); }
+        .info-row { display: flex; padding: 0.65rem 0; font-size: 0.88rem; }
+        .info-key { flex: 0 0 200px; color: var(--neon-cyan); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.7rem; padding-top: 0.15rem; font-family: 'Courier New', monospace; }
+        .info-val { color: var(--text); font-weight: 500; flex: 1; }
+
+        .action-row { display: flex; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/games}">
+        <span class="brand-icon"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2z"/></svg></span>
+        <span><span class="accent">Game</span>Log</span>
+    </a>
+    <ul class="navbar-nav">
+        <li><a th:href="@{/games}">My Library</a></li>
+        <li><span class="user-badge" sec:authentication="name">user</span></li>
+        <li>
+            <form th:action="@{/auth/logout}" method="post" style="display:inline">
+                <button type="submit" class="btn btn-outline btn-sm">Logout</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<div class="main">
+    <div class="breadcrumb">
+        <a th:href="@{/games}">My Library</a> &nbsp;//&nbsp; <span th:text="${game.title}"></span>
+    </div>
+
+    <div class="detail-card">
+        <div class="status-stripe-large" th:classappend="${#strings.toLowerCase(game.status.name())}"></div>
+
+        <span class="platinum-badge-large" th:if="${game.platinumTrophy}">⬢ Platinum</span>
+        <span class="goty-ribbon-large" th:if="${game.gotyContender}">GOTY</span>
+
+        <div class="hero">
+            <div class="dev-line-hero">
+                <span th:text="${game.developer}"></span>
+                <span th:if="${game.publisher != null and !game.publisher.isBlank() and game.publisher != game.developer}"
+                      th:text="' · ' + ${game.publisher}"></span>
+                <span th:if="${game.releaseYear != null}" th:text="' · ' + ${game.releaseYear}"></span>
+            </div>
+            <div class="game-title" th:text="${game.title}"></div>
+            <div class="protagonist-line" th:if="${game.mainProtagonist != null and !game.mainProtagonist.isBlank()}">
+                Playing as <strong th:text="${game.mainProtagonist}"></strong>
+            </div>
+
+            <div class="stars-large" th:if="${game.rating != null}">
+                <span th:each="i : ${#numbers.sequence(1,5)}"
+                      th:classappend="${i <= game.rating} ? 'star-filled' : 'star-empty'"
+                      th:text="${i <= game.rating} ? '★' : '☆'"></span>
+            </div>
+
+            <div class="badges-row">
+                <span class="badge"
+                      th:classappend="'badge-status-' + ${#strings.toLowerCase(game.status.name())}"
+                      th:text="${#strings.replace(game.status.name(),'_',' ')}"></span>
+                <span class="badge badge-genre"
+                      th:text="${#strings.replace(game.genre.name(),'_',' ')}"></span>
+                <span class="badge badge-genre" th:if="${game.secondaryGenre != null}"
+                      th:text="${#strings.replace(game.secondaryGenre.name(),'_',' ')}"></span>
+                <span class="badge badge-platform"
+                      th:text="${#strings.replace(game.platform.name(),'_',' ')}"></span>
+                <span class="badge badge-difficulty" th:if="${game.difficulty != null}"
+                      th:text="${game.difficulty.name()}"></span>
+                <span class="badge badge-playstyle" th:if="${game.playStyle != null}"
+                      th:text="${#strings.replace(game.playStyle.name(),'_',' ')}"></span>
+            </div>
+        </div>
+
+        <div class="body-section">
+
+            <div class="stats-hero">
+                <div class="stat-hero" th:if="${game.hoursPlayed != null and game.hoursPlayed > 0}">
+                    <div class="stat-hero-icon">⏱</div>
+                    <div class="stat-hero-value" th:text="${game.hoursPlayed}"></div>
+                    <div class="stat-hero-label">Hours</div>
+                </div>
+                <div class="stat-hero" th:if="${game.completionPercent != null and game.completionPercent > 0}">
+                    <div class="stat-hero-icon">▸</div>
+                    <div class="stat-hero-value" th:text="${game.completionPercent} + '%'"></div>
+                    <div class="stat-hero-label">Story</div>
+                </div>
+                <div class="stat-hero"
+                     th:if="${game.achievementsTotal != null and game.achievementsTotal > 0 and game.achievementsUnlocked != null}">
+                    <div class="stat-hero-icon">⬢</div>
+                    <div class="stat-hero-value"
+                         th:text="${game.achievementsUnlocked} + '/' + ${game.achievementsTotal}"></div>
+                    <div class="stat-hero-label">Achievements</div>
+                </div>
+                <div class="stat-hero" th:if="${game.pricePaidEur != null}">
+                    <div class="stat-hero-icon">💸</div>
+                    <div class="stat-hero-value" th:text="'€' + ${game.pricePaidEur}"></div>
+                    <div class="stat-hero-label">Paid</div>
+                </div>
+            </div>
+
+            <div class="completion-block-large" th:if="${game.completionPercent != null and game.completionPercent > 0}">
+                <div class="completion-header-large">
+                    <span class="completion-label-large">▸ Story Completion</span>
+                    <span class="completion-value-large" th:text="${game.completionPercent} + '%'"></span>
+                </div>
+                <div class="completion-bar-large">
+                    <div class="completion-fill-large" th:style="'width:' + ${game.completionPercent} + '%'"></div>
+                </div>
+            </div>
+
+            <div class="achievement-block-large"
+                 th:if="${game.achievementsTotal != null and game.achievementsTotal > 0 and game.achievementsUnlocked != null}"
+                 th:with="achPct=${(game.achievementsUnlocked * 100) / game.achievementsTotal}">
+                <div class="ach-header-large">
+                    <span class="ach-label-large">⬢ Achievement Progress</span>
+                    <span class="ach-value-large">
+                        <span th:text="${achPct} + '%'"></span>
+                        <small th:text="'(' + ${game.achievementsUnlocked} + ' / ' + ${game.achievementsTotal} + ')'"></small>
+                    </span>
+                </div>
+                <div class="ach-bar-large">
+                    <div class="ach-fill-large" th:style="'width:' + ${achPct} + '%'"></div>
+                </div>
+            </div>
+
+            <div class="quality-section"
+                 th:if="${game.storyScore != null or game.gameplayScore != null or game.visualsScore != null or game.soundtrackScore != null or game.replayValue != null}">
+                <div class="section-title">Quality Breakdown</div>
+                <div class="quality-grid">
+                    <div class="quality-card" th:if="${game.storyScore != null}">
+                        <div class="quality-card-header">
+                            <span class="quality-card-label">📖 Story</span>
+                            <span class="quality-card-score" th:text="${game.storyScore} + '/10'"></span>
+                        </div>
+                        <div class="quality-card-bar">
+                            <div class="quality-card-fill" th:style="'width:' + (${game.storyScore} * 10) + '%'"></div>
+                        </div>
+                    </div>
+                    <div class="quality-card" th:if="${game.gameplayScore != null}">
+                        <div class="quality-card-header">
+                            <span class="quality-card-label">🎮 Gameplay</span>
+                            <span class="quality-card-score" th:text="${game.gameplayScore} + '/10'"></span>
+                        </div>
+                        <div class="quality-card-bar">
+                            <div class="quality-card-fill" th:style="'width:' + (${game.gameplayScore} * 10) + '%'"></div>
+                        </div>
+                    </div>
+                    <div class="quality-card" th:if="${game.visualsScore != null}">
+                        <div class="quality-card-header">
+                            <span class="quality-card-label">✨ Visuals</span>
+                            <span class="quality-card-score" th:text="${game.visualsScore} + '/10'"></span>
+                        </div>
+                        <div class="quality-card-bar">
+                            <div class="quality-card-fill" th:style="'width:' + (${game.visualsScore} * 10) + '%'"></div>
+                        </div>
+                    </div>
+                    <div class="quality-card" th:if="${game.soundtrackScore != null}">
+                        <div class="quality-card-header">
+                            <span class="quality-card-label">🎵 Soundtrack</span>
+                            <span class="quality-card-score" th:text="${game.soundtrackScore} + '/10'"></span>
+                        </div>
+                        <div class="quality-card-bar">
+                            <div class="quality-card-fill" th:style="'width:' + (${game.soundtrackScore} * 10) + '%'"></div>
+                        </div>
+                    </div>
+                    <div class="quality-card" th:if="${game.replayValue != null}">
+                        <div class="quality-card-header">
+                            <span class="quality-card-label">⟳ Replay Value</span>
+                            <span class="quality-card-score" th:text="${game.replayValue} + '/10'"></span>
+                        </div>
+                        <div class="quality-card-bar">
+                            <div class="quality-card-fill" th:style="'width:' + (${game.replayValue} * 10) + '%'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="moment-section" th:if="${game.favoriteMoment != null and !game.favoriteMoment.isBlank()}">
+                <div class="section-title">★ Favorite Moment</div>
+                <p class="moment-text" th:text="${game.favoriteMoment}"></p>
+            </div>
+
+            <div class="build-section" th:if="${game.currentBuild != null and !game.currentBuild.isBlank()}">
+                <div class="section-title">Current Build</div>
+                <p class="build-text" th:text="${game.currentBuild}"></p>
+            </div>
+
+            <div class="mood-section" th:if="${game.moodTags != null and !game.moodTags.isBlank()}">
+                <div class="section-title">Mood &amp; Vibes</div>
+                <p class="mood-text" th:text="${game.moodTags}"></p>
+            </div>
+
+            <div class="feature-flags">
+                <span class="feature-flag" th:classappend="${game.platinumTrophy} ? 'platinum-active' : ''"
+                      th:text="${game.platinumTrophy} ? '⬢ Platinum' : '✗ No Platinum'"></span>
+                <span class="feature-flag" th:classappend="${game.gotyContender} ? 'goty-active' : ''"
+                      th:text="${game.gotyContender} ? '★ GOTY Contender' : ''"></span>
+                <span class="feature-flag" th:classappend="${game.comfortGame} ? 'active' : ''"
+                      th:text="${game.comfortGame} ? '♥ Comfort Game' : ''"></span>
+                <span class="feature-flag" th:classappend="${game.recommendToFriend} ? 'active' : ''"
+                      th:text="${game.recommendToFriend} ? '✓ Recommended' : '✗ Not Recommended'"></span>
+            </div>
+
+            <div class="review-section" th:if="${game.review != null and !game.review.isBlank()}">
+                <div class="section-title">Review</div>
+                <p class="review-text" th:text="${game.review}"></p>
+            </div>
+
+            <div class="review-section" th:if="${game.personalNotes != null and !game.personalNotes.isBlank()}">
+                <div class="section-title">Personal Notes</div>
+                <p class="review-text" th:text="${game.personalNotes}"></p>
+            </div>
+
+            <div class="info-rows">
+                <div class="info-row" th:if="${game.purchaseDate != null}">
+                    <div class="info-key">Purchased</div>
+                    <div class="info-val" th:text="${#temporals.format(game.purchaseDate, 'dd MMM yyyy')}"></div>
+                </div>
+                <div class="info-row" th:if="${game.startedDate != null}">
+                    <div class="info-key">Started</div>
+                    <div class="info-val" th:text="${#temporals.format(game.startedDate, 'dd MMM yyyy')}"></div>
+                </div>
+                <div class="info-row" th:if="${game.finishedDate != null}">
+                    <div class="info-key">Finished</div>
+                    <div class="info-val" th:text="${#temporals.format(game.finishedDate, 'dd MMM yyyy')}"></div>
+                </div>
+                <div class="info-row" th:if="${game.addedBy != null}">
+                    <div class="info-key">Added by</div>
+                    <div class="info-val" th:text="${game.addedBy}"></div>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <a th:href="@{/games}" class="btn btn-outline">Back</a>
+                <a th:href="@{/games/edit/{id}(id=${game.id})}"
+                   class="btn btn-primary" sec:authorize="hasRole('ADMIN')">Edit</a>
+                <form th:action="@{/games/delete/{id}(id=${game.id})}" method="post"
+                      sec:authorize="hasRole('ADMIN')" onsubmit="return confirm('Remove this game?')">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
