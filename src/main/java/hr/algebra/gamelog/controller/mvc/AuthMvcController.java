@@ -15,6 +15,8 @@ public class AuthMvcController {
 
     private final AuthService authService;
 
+    private static final String REGISTER_VIEW = "auth/register";
+
     public AuthMvcController(AuthService authService) {
         this.authService = authService;
     }
@@ -27,7 +29,7 @@ public class AuthMvcController {
     @GetMapping("/register")
     public String registerPage(Model model) {
         model.addAttribute("registerRequest", new Dto.RegisterRequest("", "", ""));
-        return "auth/register";
+        return REGISTER_VIEW;
     }
 
     @PostMapping("/register")
@@ -38,7 +40,7 @@ public class AuthMvcController {
         Model model
     ) {
         if (result.hasErrors()) {
-            return "auth/register";
+            return REGISTER_VIEW;
         }
         try {
             authService.register(request);
@@ -46,7 +48,7 @@ public class AuthMvcController {
             return "redirect:/auth/login";
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
-            return "auth/register";
+            return REGISTER_VIEW;
         }
     }
 }
