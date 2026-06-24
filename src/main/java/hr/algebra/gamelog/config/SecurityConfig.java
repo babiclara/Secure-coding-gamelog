@@ -25,6 +25,9 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_USER = "USER";
+
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
@@ -39,10 +42,10 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/games/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/games/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/games/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/games/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/games/**").hasAnyRole(ROLE_USER, ROLE_ADMIN)
+                .requestMatchers(HttpMethod.POST, "/api/games/**").hasRole(ROLE_ADMIN)
+                .requestMatchers(HttpMethod.PUT, "/api/games/**").hasRole(ROLE_ADMIN)
+                .requestMatchers(HttpMethod.DELETE, "/api/games/**").hasRole(ROLE_ADMIN)
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -62,8 +65,8 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     "/games/new", "/games/edit/**", "/games/delete/**"
-                ).hasRole("ADMIN")
-                .requestMatchers("/games/**").hasAnyRole("USER", "ADMIN")
+                ).hasRole(ROLE_ADMIN)
+                .requestMatchers("/games/**").hasAnyRole(ROLE_USER, ROLE_ADMIN)
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
