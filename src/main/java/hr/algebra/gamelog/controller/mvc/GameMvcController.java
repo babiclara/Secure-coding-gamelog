@@ -25,6 +25,8 @@ public class GameMvcController {
 
     private final GameService gameService;
 
+    private static final String REDIRECT_GAMES = "redirect:/games";
+
     public GameMvcController(GameService gameService) {
         this.gameService = gameService;
     }
@@ -57,7 +59,7 @@ public class GameMvcController {
             model.addAttribute("game", gameService.findById(id));
             return "games/detail";
         } catch (NoSuchElementException e) {
-            return "redirect:/games";
+            return REDIRECT_GAMES;
         }
     }
 
@@ -95,7 +97,7 @@ public class GameMvcController {
         }
         gameService.create(dto, currentUser);
         redirectAttributes.addFlashAttribute("successMessage", "Game added to your library.");
-        return "redirect:/games";
+        return REDIRECT_GAMES;
     }
 
     @GetMapping("/edit/{id}")
@@ -107,7 +109,7 @@ public class GameMvcController {
             model.addAttribute("editMode", true);
             return "games/form";
         } catch (NoSuchElementException e) {
-            return "redirect:/games";
+            return REDIRECT_GAMES;
         }
     }
 
@@ -127,7 +129,7 @@ public class GameMvcController {
         }
         gameService.update(id, dto);
         redirectAttributes.addFlashAttribute("successMessage", "Game updated.");
-        return "redirect:/games";
+        return REDIRECT_GAMES;
     }
 
     @PostMapping("/delete/{id}")
@@ -135,7 +137,7 @@ public class GameMvcController {
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         gameService.delete(id);
         redirectAttributes.addFlashAttribute("successMessage", "Game removed.");
-        return "redirect:/games";
+        return REDIRECT_GAMES;
     }
 
     private void addEnumsToModel(Model model) {
