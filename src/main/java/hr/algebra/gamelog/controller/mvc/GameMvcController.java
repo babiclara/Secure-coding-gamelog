@@ -65,7 +65,7 @@ public class GameMvcController {
     @PreAuthorize("hasRole('ADMIN')")
     public String newForm(Model model) {
         model.addAttribute("game", new GameDto(
-            null, "", "", "", null,
+            0L, "", "", "", null,
             null, null, null, null, null, null,
             0, 0, 0, 0,
             null, null, null, null, null, null,
