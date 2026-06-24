@@ -31,6 +31,8 @@ public class GameMvcController {
 
     private static final String GAMES_FORM_VIEW = "games/form";
 
+    private static final String SUCCESS_MESSAGE = "successMessage";
+
     public GameMvcController(GameService gameService) {
         this.gameService = gameService;
     }
@@ -100,7 +102,7 @@ public class GameMvcController {
             return GAMES_FORM_VIEW;
         }
         gameService.create(dto, currentUser);
-        redirectAttributes.addFlashAttribute("successMessage", "Game added to your library.");
+        redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Game added to your library.");
         return REDIRECT_GAMES;
     }
 
@@ -132,7 +134,7 @@ public class GameMvcController {
             return GAMES_FORM_VIEW;
         }
         gameService.update(id, dto);
-        redirectAttributes.addFlashAttribute("successMessage", "Game updated.");
+        redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Game updated.");
         return REDIRECT_GAMES;
     }
 
@@ -140,7 +142,7 @@ public class GameMvcController {
     @PreAuthorize("hasRole('ADMIN')")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         gameService.delete(id);
-        redirectAttributes.addFlashAttribute("successMessage", "Game removed.");
+        redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Game removed.");
         return REDIRECT_GAMES;
     }
 
