@@ -28,6 +28,8 @@ public class SecurityConfig {
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_USER = "USER";
 
+    private static final String API_GAMES = "/api/games/**";
+
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
@@ -42,10 +44,10 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/games/**").hasAnyRole(ROLE_USER, ROLE_ADMIN)
-                .requestMatchers(HttpMethod.POST, "/api/games/**").hasRole(ROLE_ADMIN)
-                .requestMatchers(HttpMethod.PUT, "/api/games/**").hasRole(ROLE_ADMIN)
-                .requestMatchers(HttpMethod.DELETE, "/api/games/**").hasRole(ROLE_ADMIN)
+                .requestMatchers(HttpMethod.GET, API_GAMES).hasAnyRole(ROLE_USER, ROLE_ADMIN)
+                .requestMatchers(HttpMethod.POST, API_GAMES).hasRole(ROLE_ADMIN)
+                .requestMatchers(HttpMethod.PUT, API_GAMES).hasRole(ROLE_ADMIN)
+                .requestMatchers(HttpMethod.DELETE, API_GAMES).hasRole(ROLE_ADMIN)
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
