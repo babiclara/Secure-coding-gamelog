@@ -49,7 +49,7 @@ public class DataInitializer implements ApplicationRunner {
         User user = new User();
         user.setUsername("user");
         user.setEmail("user@gamelog.hr");
-        user.setPassword(passwordEncoder.encode("user123"));
+        user.setPassword(passwordEncoder.encode(System.getenv().getOrDefault("USER_PASSWORD", "changeme_user")));
         user.setRole(Role.USER);
         userRepository.save(user);
 
