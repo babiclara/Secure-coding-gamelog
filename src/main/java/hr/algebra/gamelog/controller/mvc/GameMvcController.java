@@ -29,6 +29,8 @@ public class GameMvcController {
 
     private static final String EDIT_MODE = "editMode";
 
+    private static final String GAMES_FORM_VIEW = "games/form";
+
     public GameMvcController(GameService gameService) {
         this.gameService = gameService;
     }
@@ -80,7 +82,7 @@ public class GameMvcController {
         ));
         addEnumsToModel(model);
         model.addAttribute(EDIT_MODE, false);
-        return "games/form";
+        return GAMES_FORM_VIEW;
     }
 
     @PostMapping("/new")
@@ -95,7 +97,7 @@ public class GameMvcController {
         if (result.hasErrors()) {
             addEnumsToModel(model);
             model.addAttribute(EDIT_MODE, false);
-            return "games/form";
+            return GAMES_FORM_VIEW;
         }
         gameService.create(dto, currentUser);
         redirectAttributes.addFlashAttribute("successMessage", "Game added to your library.");
@@ -109,7 +111,7 @@ public class GameMvcController {
             model.addAttribute("game", gameService.findById(id));
             addEnumsToModel(model);
             model.addAttribute(EDIT_MODE, true);
-            return "games/form";
+            return GAMES_FORM_VIEW;
         } catch (NoSuchElementException e) {
             return REDIRECT_GAMES;
         }
@@ -127,7 +129,7 @@ public class GameMvcController {
         if (result.hasErrors()) {
             addEnumsToModel(model);
             model.addAttribute(EDIT_MODE, true);
-            return "games/form";
+            return GAMES_FORM_VIEW;
         }
         gameService.update(id, dto);
         redirectAttributes.addFlashAttribute("successMessage", "Game updated.");
