@@ -27,6 +27,8 @@ public class GameMvcController {
 
     private static final String REDIRECT_GAMES = "redirect:/games";
 
+    private static final String EDIT_MODE = "editMode";
+
     public GameMvcController(GameService gameService) {
         this.gameService = gameService;
     }
@@ -77,7 +79,7 @@ public class GameMvcController {
             null, null, null
         ));
         addEnumsToModel(model);
-        model.addAttribute("editMode", false);
+        model.addAttribute(EDIT_MODE, false);
         return "games/form";
     }
 
@@ -92,7 +94,7 @@ public class GameMvcController {
     ) {
         if (result.hasErrors()) {
             addEnumsToModel(model);
-            model.addAttribute("editMode", false);
+            model.addAttribute(EDIT_MODE, false);
             return "games/form";
         }
         gameService.create(dto, currentUser);
@@ -106,7 +108,7 @@ public class GameMvcController {
         try {
             model.addAttribute("game", gameService.findById(id));
             addEnumsToModel(model);
-            model.addAttribute("editMode", true);
+            model.addAttribute(EDIT_MODE, true);
             return "games/form";
         } catch (NoSuchElementException e) {
             return REDIRECT_GAMES;
@@ -124,7 +126,7 @@ public class GameMvcController {
     ) {
         if (result.hasErrors()) {
             addEnumsToModel(model);
-            model.addAttribute("editMode", true);
+            model.addAttribute(EDIT_MODE, true);
             return "games/form";
         }
         gameService.update(id, dto);
